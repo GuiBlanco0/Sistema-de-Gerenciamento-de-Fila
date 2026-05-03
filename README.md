@@ -26,7 +26,7 @@ Operações: `push`, `pop`, `pilha_peek`, `pilha_vazia`
 
 ### OnlineGDB
 
-1. Acesse [onlinegdb.com](https://onlinegdb.com/WYDa52Jiz)
+1. Acesse [onlinegdb.com](https://onlinegdb.com/8ww1YX669)
 2. Selecione a linguagem **C**
 4. Clique em **Run**
 
