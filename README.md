@@ -79,6 +79,11 @@ gcc teleconsultas.c -o teleconsultas.exe
 teleconsultas.exe
 ```
 
+Na Web:
+```bash
+<script src="//onlinegdb.com/embed/js/-KP-wVllL?theme=dark"></script>
+```
+
 ---
 
 ## Menu interativo
