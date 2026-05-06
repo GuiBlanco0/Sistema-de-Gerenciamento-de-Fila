@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_HISTORICO 10
-
 typedef struct NoPaciente {
     char nome[50];
     struct NoPaciente *prox;
@@ -35,7 +33,6 @@ void enqueue(Fila *f, const char *nome) {
     NoPaciente *novo = malloc(sizeof(NoPaciente));
     strcpy(novo->nome, nome);
     novo->prox = NULL;
-
     if (f->fim == NULL) {
         f->inicio = f->fim = novo;
     } else {
@@ -47,7 +44,6 @@ void enqueue(Fila *f, const char *nome) {
 
 int dequeue(Fila *f, char *out) {
     if (fila_vazia(f)) return 0;
-
     NoPaciente *tmp = f->inicio;
     strcpy(out, tmp->nome);
     f->inicio = tmp->prox;
@@ -59,10 +55,7 @@ int dequeue(Fila *f, char *out) {
 
 void fila_imprimir(Fila *f, const char *label) {
     printf("  [%s] ", label);
-    if (fila_vazia(f)) {
-        printf("(vazia)\n");
-        return;
-    }
+    if (fila_vazia(f)) { printf("(vazia)\n"); return; }
     NoPaciente *atual = f->inicio;
     while (atual) {
         printf("%s", atual->nome);
@@ -107,7 +100,6 @@ void push(Pilha *p, const char *descricao) {
 
 int pop(Pilha *p, char *out) {
     if (pilha_vazia(p)) return 0;
-
     NoAcao *tmp = p->topo;
     strcpy(out, tmp->descricao);
     p->topo = tmp->prox;
@@ -118,10 +110,7 @@ int pop(Pilha *p, char *out) {
 
 void pilha_imprimir(Pilha *p, const char *label) {
     printf("  [%s] (topo -> base)\n", label);
-    if (pilha_vazia(p)) {
-        printf("    (vazia)\n");
-        return;
-    }
+    if (pilha_vazia(p)) { printf("    (vazia)\n"); return; }
     NoAcao *atual = p->topo;
     int i = 1;
     while (atual) {
@@ -145,10 +134,10 @@ void processar_atendimento(Fila *prioridade, Fila *normal,
         return;
     }
 
-    printf("  Dr. %d chamando: %s [%s]\n", num_medico, paciente, tipo);
-
+    printf("  Dr.%d chamando: %s [%s]\n", num_medico, paciente, tipo);
     snprintf(registro, sizeof(registro), "%s | %s | Dr.%d", paciente, tipo, num_medico);
     push(historico, registro);
+
     FILE *f = fopen("atendimentos.csv", "a");
     if (f) {
         fprintf(f, "%s,%s,%d\n", paciente, tipo, num_medico);
@@ -159,157 +148,142 @@ void processar_atendimento(Fila *prioridade, Fila *normal,
 void desfazer_ultima_acao(Pilha *historico, Pilha *acoes_desfeitas,
                            Fila *prioridade, Fila *normal) {
     char registro[100];
-
     if (!pop(historico, registro)) {
         printf("  Nada para desfazer.\n");
         return;
     }
-
     push(acoes_desfeitas, registro);
 
     char nome[50], tipo[20], resto[50];
     sscanf(registro, "%[^|]| %[^|]| %s", nome, tipo, resto);
-
-
     int len = strlen(nome);
     while (len > 0 && nome[len-1] == ' ') nome[--len] = '\0';
 
     printf("  Acao desfeita. Paciente '%s' recolocado na fila.\n", nome);
 
-    if (strncmp(tipo, "URGENTE", 7) == 0) {
+    if (strncmp(tipo, "URGENTE", 7) == 0)
         enqueue(prioridade, nome);
-    } else {
+    else
         enqueue(normal, nome);
+}
+
+void limpar_buffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+void exibir_estado(Fila *prioridade, Fila *normal, Pilha *historico) {
+    printf("\n--- Estado atual ---\n");
+    fila_imprimir(prioridade, "Fila urgente");
+    fila_imprimir(normal,     "Fila normal ");
+    pilha_imprimir(historico, "Historico   ");
+    printf("--------------------\n");
+}
+
+void menu_adicionar(Fila *prioridade, Fila *normal) {
+    char nome[50];
+    int tipo;
+
+    printf("  Nome do paciente: ");
+    fgets(nome, sizeof(nome), stdin);
+    nome[strcspn(nome, "\n")] = '\0';
+    if (strlen(nome) == 0) { printf("  Nome invalido.\n"); return; }
+
+    printf("  Tipo: 1 - Comum  2 - Urgente\n  > ");
+    if (scanf("%d", &tipo) != 1) { limpar_buffer(); printf("  Opcao invalida.\n"); return; }
+    limpar_buffer();
+
+    if (tipo == 1) {
+        enqueue(normal, nome);
+        printf("  '%s' adicionado na fila comum.\n", nome);
+    } else if (tipo == 2) {
+        enqueue(prioridade, nome);
+        printf("  '%s' adicionado na fila urgente.\n", nome);
+    } else {
+        printf("  Opcao invalida.\n");
     }
 }
 
-void separador(const char *titulo) {
-    printf("\n");
-    printf("==========================================================\n");
-    printf("  CENARIO: %s\n", titulo);
-    printf("==========================================================\n");
-}
-
-void cenario_fluxo_basico() {
-    separador("Fluxo basico de teleconsultas");
-
-    Fila normal, prioridade;
-    Pilha historico, desfeitas;
-
-    fila_inicializar(&normal);
-    fila_inicializar(&prioridade);
-    pilha_inicializar(&historico);
-    pilha_inicializar(&desfeitas);
-
-    printf("\n>> Pacientes entrando na fila comum:\n");
-    enqueue(&normal, "Ana Lima");
-    enqueue(&normal, "Carlos Souza");
-    enqueue(&normal, "Beatriz Nunes");
-
-    fila_imprimir(&normal, "Fila normal");
-
-    char proximo[50];
-    if (fila_peek(&normal, proximo))
-        printf("  Proximo na fila: %s\n", proximo);
-
-    printf("\n>> Medicos chamando pacientes:\n");
-    processar_atendimento(&prioridade, &normal, &historico, 1);
-    processar_atendimento(&prioridade, &normal, &historico, 2);
-    processar_atendimento(&prioridade, &normal, &historico, 3);
-
-    printf("\n>> Historico de atendimentos:\n");
-    pilha_imprimir(&historico, "Historico");
-}
-
-void cenario_emergencia() {
-    separador("Emergencia com fila de prioridade");
-
-    Fila normal, prioridade;
-    Pilha historico, desfeitas;
-
-    fila_inicializar(&normal);
-    fila_inicializar(&prioridade);
-    pilha_inicializar(&historico);
-    pilha_inicializar(&desfeitas);
-
-    printf("\n>> Fila comum ja formada:\n");
-    enqueue(&normal, "Roberto Alves");
-    enqueue(&normal, "Fernanda Costa");
-    enqueue(&normal, "Jorge Melo");
-
-    printf("\n>> Alerta critico: dois pacientes em emergencia!\n");
-    enqueue(&prioridade, "Lucia Ferreira");  
-    enqueue(&prioridade, "Marcos Dias");
-
-    fila_imprimir(&prioridade, "Fila urgente");
-    fila_imprimir(&normal,     "Fila normal ");
-
-    printf("\n>> Medico processando fila (urgentes primeiro):\n");
-    int i;
-    for (i = 1; i <= 5; i++) {
-        processar_atendimento(&prioridade, &normal, &historico, 1);
+void menu_chamar(Fila *prioridade, Fila *normal, Pilha *historico) {
+    int num;
+    printf("  Numero do medico: ");
+    if (scanf("%d", &num) != 1 || num <= 0) {
+        limpar_buffer();
+        printf("  Numero invalido.\n");
+        return;
     }
-
-    printf("\n>> Historico (ultimo atendido = topo):\n");
-    pilha_imprimir(&historico, "Historico");
+    limpar_buffer();
+    processar_atendimento(prioridade, normal, historico, num);
 }
-
-void cenario_desfazer_refazer() {
-    separador("Desfazer e refazer acao administrativa");
-
-    Fila normal, prioridade;
-    Pilha historico, desfeitas;
-
-    fila_inicializar(&normal);
-    fila_inicializar(&prioridade);
-    pilha_inicializar(&historico);
-    pilha_inicializar(&desfeitas);
-
-    enqueue(&normal, "Patricia Gomes");
-    enqueue(&normal, "Thiago Ramos");
-    enqueue(&normal, "Camila Vieira");
-
-    printf("\n>> Processando 2 atendimentos:\n");
-    processar_atendimento(&prioridade, &normal, &historico, 2);
-    processar_atendimento(&prioridade, &normal, &historico, 3);
-
-    printf("\n>> Estado antes do desfazer:\n");
-    pilha_imprimir(&historico, "Historico");
-    fila_imprimir(&normal, "Fila normal");
-
-    printf("\n>> Administrador desfaz ultimo atendimento:\n");
-    desfazer_ultima_acao(&historico, &desfeitas, &prioridade, &normal);
-
-    printf("\n>> Estado apos desfazer:\n");
-    pilha_imprimir(&historico, "Historico");
-    fila_imprimir(&normal, "Fila normal");
-
-    char ultima[100];
-    if (pilha_peek(&desfeitas, ultima))
-        printf("\n  Acao que pode ser refeita: %s\n", ultima);
-
-    printf("\n>> Processando fila apos correcao:\n");
-    processar_atendimento(&prioridade, &normal, &historico, 2);
-    processar_atendimento(&prioridade, &normal, &historico, 2);
-
-    printf("\n>> Historico final:\n");
-    pilha_imprimir(&historico, "Historico");
-}
-
-
-// MAIN
 
 int main() {
+    Fila normal, prioridade;
+    Pilha historico, desfeitas;
+
+    fila_inicializar(&normal);
+    fila_inicializar(&prioridade);
+    pilha_inicializar(&historico);
+    pilha_inicializar(&desfeitas);
+
     FILE *csv = fopen("atendimentos.csv", "w");
-    if (csv) {
-        fprintf(csv, "Paciente,Tipo,Medico\n");
-        fclose(csv);
-    }
+    if (csv) { fprintf(csv, "Paciente,Tipo,Medico\n"); fclose(csv); }
 
-    cenario_fluxo_basico();
-    cenario_emergencia();
-    cenario_desfazer_refazer();
+    int opcao;
 
-    printf("\n\nTodos os atendimentos salvos em atendimentos.csv\n");
+    printf("=========================================\n");
+    printf("   SISTEMA DE TELECONSULTAS\n");
+    printf("=========================================\n");
+
+    do {
+        printf("\n[1] Adicionar paciente\n");
+        printf("[2] Chamar proximo paciente\n");
+        printf("[3] Ver proximo da fila\n");
+        printf("[4] Ver estado completo\n");
+        printf("[5] Desfazer ultimo atendimento\n");
+        printf("[0] Sair\n");
+        printf("> ");
+
+        if (scanf("%d", &opcao) != 1) { limpar_buffer(); continue; }
+        limpar_buffer();
+        printf("\n");
+
+        switch (opcao) {
+            case 1:
+                menu_adicionar(&prioridade, &normal);
+                break;
+
+            case 2:
+                menu_chamar(&prioridade, &normal, &historico);
+                break;
+
+            case 3: {
+                char prox[50];
+                if (fila_peek(&prioridade, prox))
+                    printf("  Proximo (urgente): %s\n", prox);
+                else if (fila_peek(&normal, prox))
+                    printf("  Proximo (comum): %s\n", prox);
+                else
+                    printf("  Nenhum paciente aguardando.\n");
+                break;
+            }
+
+            case 4:
+                exibir_estado(&prioridade, &normal, &historico);
+                break;
+
+            case 5:
+                desfazer_ultima_acao(&historico, &desfeitas, &prioridade, &normal);
+                break;
+
+            case 0:
+                printf("  Encerrando. Atendimentos salvos em atendimentos.csv\n");
+                break;
+
+            default:
+                printf("  Opcao invalida.\n");
+        }
+
+    } while (opcao != 0);
+
     return 0;
 }
