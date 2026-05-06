@@ -80,9 +80,7 @@ teleconsultas.exe
 ```
 
 Na Web:
-```bash
 [OnlineGDB](https://onlinegdb.com/-KP-wVllL)
-```
 
 ---
 
