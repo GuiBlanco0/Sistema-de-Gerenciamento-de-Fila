@@ -1,51 +1,126 @@
-# Sistema de Gerenciamento de Fila de Atendimento - Blua
+# Blua — Sistema de Gerenciamento de Fila de Teleconsultas
 
-Trabalho prático da Sprint 3 — implementação de Fila e Pilha com listas encadeadas em C, aplicado ao contexto da plataforma Blua (Care Plus).
+Trabalho prático desenvolvido para a disciplina de Estruturas de Dados. Simula o gerenciamento de atendimentos remotos da plataforma **Blua** da Care Plus, utilizando **Fila** e **Pilha** implementadas do zero com listas encadeadas em C.
 
-## Sobre o projeto
+---
 
-O sistema simula o fluxo de atendimento remoto da Blua: pacientes entram em fila, emergências são priorizadas, médicos processam os atendimentos em ordem, e todas as ações ficam registradas em histórico.
+## Contexto
 
-## Estruturas implementadas
+A Care Plus está expandindo a plataforma Blua para oferecer cuidado remoto proativo. Um dos desafios centrais é gerenciar, de forma eficiente e segura, o fluxo de teleconsultas: solicitações chegam continuamente, médicos precisam atender na ordem correta, e alertas críticos de saúde devem ser priorizados imediatamente.
 
-**Fila (FIFO)** — usada para a fila de teleconsultas comuns e a fila de emergências  
-Operações: `enqueue`, `dequeue`, `fila_peek`, `fila_vazia`
+---
 
-**Pilha (LIFO)** — usada para o histórico de atendimentos e para desfazer ações administrativas  
-Operações: `push`, `pop`, `pilha_peek`, `pilha_vazia`
+## Funcionalidades
 
-## Cenários demonstrados
+- Enfileirar pacientes que solicitam teleconsulta (fila comum ou urgente)
+- Priorizar emergências com fila diferenciada — pacientes urgentes sempre são atendidos antes
+- Processar atendimentos simulando a chamada sequencial por um médico disponível
+- Registrar histórico das consultas finalizadas em uma pilha (auditoria LIFO)
+- Desfazer o último atendimento, recolocando o paciente na fila correta
+- Persistir os atendimentos em arquivo `atendimentos.csv`
+- Menu interativo para uso em tempo real
 
-| Cenário | Descrição |
+---
+
+## Estruturas de Dados
+
+Ambas as estruturas foram implementadas manualmente com listas encadeadas, **sem uso de bibliotecas prontas**.
+
+### Fila (FIFO)
+Utilizada para gerenciar a ordem de chegada dos pacientes. O sistema mantém duas filas simultâneas:
+
+| Fila | Uso |
 |---|---|
-| 1 — Fluxo básico | Pacientes entram na fila comum e são atendidos em ordem FIFO |
-| 2 — Emergência | Pacientes urgentes são priorizados e atendidos antes dos da fila normal |
-| 3 — Desfazer/refazer | Administrador desfaz um atendimento; paciente volta para a fila |
+| `normal` | Pacientes comuns em ordem de chegada |
+| `prioridade` | Pacientes em situação de emergência |
+
+Operações implementadas: `enqueue`, `dequeue`, `fila_peek`, `fila_vazia`
+
+### Pilha (LIFO)
+Utilizada para o histórico de atendimentos e para a funcionalidade de desfazer ações administrativas.
+
+| Pilha | Uso |
+|---|---|
+| `historico` | Registra cada atendimento finalizado |
+| `acoes_desfeitas` | Guarda ações desfeitas para auditoria |
+
+Operações implementadas: `push`, `pop`, `pilha_peek`, `pilha_vazia`
+
+---
+
+## Cenários Demonstrados
+
+**Cenário 1 — Fluxo básico de teleconsultas**
+Três pacientes entram na fila comum e são atendidos sequencialmente por médicos disponíveis. Demonstra o comportamento FIFO da fila e o registro no histórico.
+
+**Cenário 2 — Emergência com fila de prioridade**
+Com a fila comum já formada, dois pacientes em situação crítica são inseridos na fila urgente. O médico processa todos os atendimentos, sempre dando preferência aos urgentes.
+
+**Cenário 3 — Desfazer e refazer ação administrativa**
+Dois atendimentos são processados. O administrador desfaz o último, o paciente é recolocado na fila e o sistema segue normalmente. Demonstra o uso da pilha para controle de ações.
+
+---
 
 ## Como executar
 
-### OnlineGDB
+**Pré-requisito:** GCC instalado.
 
-1. Acesse [onlinegdb.com](https://onlinegdb.com/8ww1YX669)
-2. Selecione a linguagem **C**
-4. Clique em **Run**
+```bash
+# Compilar
+gcc teleconsultas.c -o teleconsultas
 
-## Saída esperada
+# Executar
+./teleconsultas
+```
 
-O programa imprime os 3 cenários no terminal e gera um arquivo `atendimentos.csv` com o registro de todos os atendimentos processados:
+No Windows:
+```bash
+gcc teleconsultas.c -o teleconsultas.exe
+teleconsultas.exe
+```
+
+---
+
+## Menu interativo
+
+```
+=========================================
+   SISTEMA DE TELECONSULTAS
+=========================================
+
+[1] Adicionar paciente
+[2] Chamar proximo paciente
+[3] Ver proximo da fila
+[4] Ver estado completo
+[5] Desfazer ultimo atendimento
+[0] Sair
+```
+
+Ao adicionar um paciente, o sistema pergunta o nome e se é atendimento **comum** ou **urgente**. Ao chamar o próximo, informa o número do médico responsável.
+
+---
+
+## Arquivos
+
+```
+.
+├── teleconsultas.c     # Código-fonte principal
+├── atendimentos.csv    # Gerado automaticamente ao executar
+└── README.md
+```
+
+O arquivo `atendimentos.csv` é criado/sobrescrito a cada execução e registra todos os atendimentos no formato:
 
 ```
 Paciente,Tipo,Medico
 Ana Lima,COMUM,1
-Carlos Souza,COMUM,2
-Beatriz Nunes,COMUM,3
 Lucia Ferreira,URGENTE,1
-Marcos Dias,URGENTE,1
-Roberto Alves,COMUM,1
-Fernanda Costa,COMUM,1
-Jorge Melo,COMUM,1
-Patricia Gomes,COMUM,2
-Thiago Ramos,COMUM,3
-Camila Vieira,COMUM,2
-Thiago Ramos,COMUM,2
 ```
+
+---
+
+## Tecnologia
+
+- Linguagem: **C (C99)**
+- Compilador: **GCC**
+- Estruturas: listas encadeadas com alocação dinâmica (`malloc`/`free`)
