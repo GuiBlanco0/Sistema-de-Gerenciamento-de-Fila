@@ -81,7 +81,7 @@ teleconsultas.exe
 
 Na Web:
 ```bash
-🔗 [Abrir projeto no OnlineGDB](https://onlinegdb.com/-KP-wVllL)
+[OnlineGDB](https://onlinegdb.com/-KP-wVllL)
 ```
 
 ---
